@@ -1,17 +1,19 @@
 package collector
 
 import (
-	"github.com/dyatlov/go-opengraph/opengraph"
-	"github.com/fatih/structs"
 	"net/http"
 	"reflect"
+
+	"github.com/dyatlov/go-opengraph/opengraph"
+	"github.com/fatih/structs"
 )
 
+// Origin returns a Platform specific to Origin
 func Origin() Platform {
 	return Platform{
 		enabled:  true,
 		name:     "origin",
-		statsUrl: "%s",
+		statsURL: "%s",
 		parseWith: func(r *http.Response) (Stat, error) {
 			og := opengraph.NewOpenGraph()
 			err := og.ProcessHTML(r.Body)

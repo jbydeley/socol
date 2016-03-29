@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/otobrglez/socol/pkg"
+	"github.com/jbydeley/socol/pkg"
 )
 
 func statsHandler(w http.ResponseWriter, r *http.Request) {
@@ -48,15 +48,17 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-var logger *log.Logger
-var errorsLogger *log.Logger
-var isServer = false
-var cliURLs = []string{}
-var cliURL = ""
-var cliPlatforms = []string{}
-var cliPlatform = ""
-var port = 5000
-var proxy = ""
+var (
+	logger       *log.Logger
+	errorsLogger *log.Logger
+	isServer     = false
+	cliURLs      = []string{}
+	cliURL       = ""
+	cliPlatforms = []string{}
+	cliPlatform  = ""
+	port         = 5000
+	proxy        = ""
+)
 
 func init() {
 	if cpu := runtime.NumCPU(); cpu == 1 {

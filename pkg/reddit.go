@@ -6,11 +6,12 @@ import (
 	"net/http"
 )
 
+// Reddit returns a Platform specific to Reddit
 func Reddit() Platform {
 	return Platform{
 		enabled:  true,
 		name:     "reddit",
-		statsUrl: "https://www.reddit.com/api/info.json?&url=%s",
+		statsURL: "https://www.reddit.com/api/info.json?&url=%s",
 		parseWith: func(r *http.Response) (Stat, error) {
 			//TODO: Implement this
 			body, error := ioutil.ReadAll(r.Body)
@@ -22,15 +23,14 @@ func Reddit() Platform {
 			var jsonBlob map[string]interface{}
 			if err := json.Unmarshal(body, &jsonBlob); err != nil {
 				return Stat{}, err
-			} else {
-				pData := jsonBlob["data"].(map[string]interface{})
-				for _, ch := range pData["children"].([]interface{}) {
-					el := ch.(map[string]interface{})
-					if el["kind"] == "t3" {
-						d := el["data"].(map[string]interface{})
-						ups += d["ups"].(float64)
-						downs += d["downs"].(float64)
-					}
+			}
+			pData := jsonBlob["data"].(map[string]interface{})
+			for _, ch := range pData["children"].([]interface{}) {
+				el := ch.(map[string]interface{})
+				if el["kind"] == "t3" {
+					d := el["data"].(map[string]interface{})
+					ups += d["ups"].(float64)
+					downs += d["downs"].(float64)
 				}
 			}
 

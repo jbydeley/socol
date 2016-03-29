@@ -7,11 +7,12 @@ import (
 	"strconv"
 )
 
+// Pocket returns a Platform specific to Pocket
 func Pocket() Platform {
 	return Platform{
 		enabled:  true,
 		name:     "pocket",
-		statsUrl: "https://widgets.getpocket.com/v1/button?count=vertical&url=%s",
+		statsURL: "https://widgets.getpocket.com/v1/button?count=vertical&url=%s",
 		parseWith: func(r *http.Response) (Stat, error) {
 			body, error := ioutil.ReadAll(r.Body)
 			if error != nil {
@@ -34,8 +35,6 @@ func Pocket() Platform {
 					"count": count,
 				},
 			}, nil
-
-			return Stat{}, nil
 		},
 	}
 }

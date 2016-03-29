@@ -16,27 +16,34 @@ import (
 	"time"
 )
 
+// Stat holds a name and a data structure
 type Stat struct {
 	name string
 	data map[string]interface{}
 }
 
+// Platform holds the details on a specific social platform
 type Platform struct {
 	enabled   bool
 	name      string
-	statsUrl  string
+	statsURL  string
 	parseWith func(*http.Response) (Stat, error)
 	stat      Stat
 	format    string
 }
 
+const (
+	originName = "origin"
+)
+
+// Formats holds a hash of format to Content-Type
 var Formats = map[string]string{
 	"xml":   "text/xml",
 	"jsonp": "application/javascript",
 	"json":  "application/json",
 }
 
-var platforms []Platform = []Platform{
+var platforms = []Platform{
 	Facebook(),
 	Pinterest(),
 	Linkedin(),
@@ -83,10 +90,10 @@ func buildClientAsync() (*http.Client, error) {
 	}, nil
 }
 
-func (platform Platform) doRequest(lookupUrl string, stats chan<- Stat, errorsChannel chan *error) {
+func (platform Platform) doRequest(lookupURL string, stats chan<- Stat, errorsChannel chan *error) {
 	start := time.Now()
-	fullUrl := fmt.Sprintf(platform.statsUrl, lookupUrl)
-	logger.Println(platform.name, "Requesting", fullUrl)
+	fullURL := fmt.Sprintf(platform.statsURL, lookupURL)
+	logger.Println(platform.name, "Requesting", fullURL)
 
 	client, err := buildClientAsync()
 	if err != nil {
@@ -94,7 +101,7 @@ func (platform Platform) doRequest(lookupUrl string, stats chan<- Stat, errorsCh
 		return
 	}
 
-	request, error := http.NewRequest("GET", fullUrl, nil)
+	request, error := http.NewRequest("GET", fullURL, nil)
 	request.Header.Set("User-Agent", strings.Join([]string{"Mozilla/5.0 (socol) ", strconv.Itoa(rand.Intn(1000))}, " "))
 	if platform.format != "" {
 		logger.Println("Setting content type to", platform.format)
@@ -115,8 +122,8 @@ func (platform Platform) doRequest(lookupUrl string, stats chan<- Stat, errorsCh
 	}
 
 	if response.StatusCode != http.StatusOK {
-		error := errors.New("Got non OK HTTP status at " + response.Status + "-" + fullUrl)
-		errorsChannel <- &error
+		err := errors.New("Got non OK HTTP status at " + response.Status + "-" + fullURL)
+		errorsChannel <- &err
 	}
 
 	fetchedIn := time.Now().Sub(start).Seconds()
@@ -143,7 +150,7 @@ func (platform Platform) doRequest(lookupUrl string, stats chan<- Stat, errorsCh
 
 func resolveAndOG(url string) (stat Stat, urls []string, err error) {
 	start := time.Now()
-	stat.name = "origin"
+	stat.name = originName
 	err = nil
 	urls = append(urls, url)
 
@@ -186,7 +193,7 @@ func resolveAndOG(url string) (stat Stat, urls []string, err error) {
 		return
 	}
 
-	stat.name = "origin"
+	stat.name = originName
 	stat.data["fetched_in"] = fetchedIn
 	stat.data["completed_in"] = time.Now().Sub(start).Seconds()
 	logger.Println(stat.name, "Completed in", stat.data["completed_in"], "s")
@@ -202,7 +209,7 @@ func resolveAndOG(url string) (stat Stat, urls []string, err error) {
 
 func canRunPlatform(platform *Platform, selectedPlatforms *[]string) (canRun bool) {
 	canRun = false
-	if platform.name == "origin" {
+	if platform.name == originName {
 		return false
 	}
 
@@ -268,7 +275,8 @@ func init() {
 	}
 }
 
-func New(lookupUrl string, selectedPlatforms []string, privateProxy string) map[string]interface{} {
+// New returns a map of social platforms and stats
+func New(lookupURL string, selectedPlatforms []string, privateProxy string) map[string]interface{} {
 	proxy = privateProxy
 
 	if selectedPlatforms == nil ||
@@ -276,12 +284,12 @@ func New(lookupUrl string, selectedPlatforms []string, privateProxy string) map[
 		selectedPlatforms = []string{}
 	}
 
-	selectedPlatforms = append(selectedPlatforms, "origin")
+	selectedPlatforms = append(selectedPlatforms, originName)
 	errors, stats, taskCount := make(chan *error), make(chan Stat), 0
 	aggregated := map[string]interface{}{}
 	errorsCollection := []error{}
 
-	rStat, urls, rError := resolveAndOG(lookupUrl)
+	rStat, urls, rError := resolveAndOG(lookupURL)
 	if rError != nil {
 		errorsLogger.Println(rError)
 	} else {
@@ -292,11 +300,11 @@ func New(lookupUrl string, selectedPlatforms []string, privateProxy string) map[
 		logger.Println("Digging for", urls)
 	}
 
-	lookupUrl = urls[len(urls)-1]
+	lookupURL = urls[len(urls)-1]
 
 	for _, platform := range platforms {
 		if canRunPlatform(&platform, &selectedPlatforms) {
-			go platform.doRequest(lookupUrl, stats, errors)
+			go platform.doRequest(lookupURL, stats, errors)
 			taskCount++
 		}
 	}
